@@ -16,9 +16,13 @@ $(function () {
     else
     {
         $(".loginInfo").html("Please login");
-    }
+    }    
 
 });
+
+
+
+
 function initializeAutoComplete()
 {
     $("#foodKeyword").autocomplete({
@@ -358,6 +362,7 @@ function constructFoodDetailsHtml(index, servingIndex)
     //this method will genrate the table of nutrients information
     function generateContent(nutrientdInfo)
     {
+        var nutrients={total_carbs:0, protein:0, total_fats:0, others:0};
         var html = "";
         for (var key in nutrientdInfo)
         {
@@ -367,11 +372,87 @@ function constructFoodDetailsHtml(index, servingIndex)
                 html += "<td>" + key + "<td>";
                 html += "<td>" + nutrientdInfo[key].value + " " + nutrientdInfo[key].unit + "<td>";
                 html += "<tr>";
+                
+                if(nutrients.hasOwnProperty(key))
+                {
+                    if(nutrientdInfo[key].unit==="g")
+                        nutrients[key]=parseFloat(nutrientdInfo[key].value);
+                    else if(nutrientdInfo[key].unit==="mg")
+                        nutrients[key]=parseFloat(nutrientdInfo[key].value/1000);
+                }
+                else
+                {
+                    if(nutrientdInfo[key].unit==="g")
+                        nutrients.others += parseFloat(nutrientdInfo[key].value);
+                    else if(nutrientdInfo[key].unit==="mg")
+                        nutrients.others += parseFloat(nutrientdInfo[key].value/1000);
+                }
             }
+            
         }
+
+        var data = google.visualization.arrayToDataTable([
+            ['Nutrients', 'gram'],
+            ['Carbs', nutrients.total_carbs],
+            ['Protien', nutrients.protein],
+            ['Total Fat', nutrients.total_fats],
+            ['Others', nutrients.others]
+        ]);
+
+        drawChart(data);
         return html;
     }
+    
+    drawChart(generateGraphData($.extend({}, currentFood.portions[servingIndex].nutrients["important"], currentFood.portions[servingIndex].nutrients["extra"])));
+    function generateGraphData(nutrientdInfo)
+    {
+        var nutrients={total_carbs:0, protein:0, total_fats:0, others:0};
+        for (var key in nutrientdInfo)
+        {
+            if (nutrientdInfo[key])
+            {                
+                if(nutrients.hasOwnProperty(key))
+                {
+                    if(nutrientdInfo[key].unit==="g")
+                        nutrients[key]=parseFloat(nutrientdInfo[key].value);
+                    else if(nutrientdInfo[key].unit==="mg")
+                        nutrients[key]=parseFloat(nutrientdInfo[key].value/1000);
+                }
+                else
+                {
+                    if(nutrientdInfo[key].unit==="g")
+                        nutrients.others += parseFloat(nutrientdInfo[key].value);
+                    else if(nutrientdInfo[key].unit==="mg")
+                        nutrients.others += parseFloat(nutrientdInfo[key].value/1000);
+                }
+            }
+            
+        }
 
+        var data = google.visualization.arrayToDataTable([
+            ['Nutrients', 'gram'],
+            ['Carbs', nutrients.total_carbs],
+            ['Protien', nutrients.protein],
+            ['Total Fat', nutrients.total_fats],
+            ['Others', nutrients.others]
+        ]);
+        
+        return data;
+    }
+    
+
+}
+
+function drawChart(data) {
+
+    var options = {
+        title: 'Food Composition',
+        is3D: true,
+        backgroundColor: 'transparent',
+    };
+
+    var chart = new google.visualization.PieChart(document.getElementById('foodComposition'));
+    chart.draw(data, options);
 }
 
 
